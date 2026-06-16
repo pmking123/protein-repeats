@@ -14,7 +14,8 @@ contact_density_results.csv  -- from contact_density_analysis.py
 
 MPSI and r_cons values (from prior analysis, rcons_identity_correlation.py):
   Fill KNOWN_DATA below with your values, or supply a CSV with columns
-  family, r_cons, mpsi.
+  name, r_cons, mpsi  (as produced by rcons_identity_correlation.py;
+  note the key column is "name", not "family").
 
 Outputs
 -------
@@ -68,7 +69,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--contact-csv", default="contact_density_results.csv")
     parser.add_argument("--rcons-csv",   default=None,
-                        help="CSV with columns: family, r_cons, mpsi")
+                        help="CSV produced by rcons_identity_correlation.py "
+                             "(columns: name, r_cons, mpsi). Names like "
+                             "'SH2 (PF00017)' are normalised to short keys "
+                             "matching contact_density_results.csv.")
     parser.add_argument("--out-dir",     default=".")
     args = parser.parse_args()
 
@@ -79,12 +83,30 @@ def main():
             if row["rho"]:
                 contact[row["family"]] = float(row["rho"])
 
-    # Load r_cons / MPSI
+    # Load r_cons / MPSI.
+    # KNOWN_DATA uses the same short keys as contact_density_results.csv.
     rc_mpsi = dict(KNOWN_DATA)
     if args.rcons_csv:
+        # rcons_identity_correlation.csv uses column "name" (not "family") and
+        # long names like "SH2 (PF00017)".  Normalise to short keys so the
+        # join with contact_density_results.csv succeeds.
+        NAME_MAP = {
+            "SH2 (PF00017)":         "SH2",
+            "SH3 (PF00018)":         "SH3",
+            "Prot.kinase (PF00069)": "Kinase",
+            "Ig (PF00047)":          "Immunoglobulin",
+            "PDZ (PF00595)":         "PDZ",
+            "Ubiquitin (PF00240)":   "Ubiquitin",
+            "RRM (PF00076)":         "RRM",
+        }
         with open(args.rcons_csv) as f:
             for row in csv.DictReader(f):
-                rc_mpsi[row["family"]] = (float(row["r_cons"]), float(row["mpsi"]))
+                raw_name = row["name"]           # column is "name", not "family"
+                short    = NAME_MAP.get(raw_name, raw_name)
+                mpsi_str = row.get("mpsi", "")
+                if not mpsi_str:                 # estimated rows have empty mpsi
+                    continue
+                rc_mpsi[short] = (float(row["r_cons"]), float(mpsi_str))
 
     if not rc_mpsi:
         print("ERROR: No r_cons/MPSI data. Fill KNOWN_DATA dict or pass --rcons-csv.")

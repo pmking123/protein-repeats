@@ -47,7 +47,7 @@ wget https://files.rcsb.org/download/1UBQ.pdb  # Ubiquitin
 wget https://files.rcsb.org/download/1BE9.pdb  # RRM
 ```
 
-The Turjanski et al. (2016) supplementary tables (S1–S3) required by `mr_coherence_analysis.py` are available from the original publication.
+The Turjanski et al. (2016) supplementary MR coverage data used by `mr_coherence_analysis.py` are hard-coded in that script and require no external files.
 
 ---
 
@@ -77,12 +77,12 @@ Computes mean pairwise sequence identity (MPSI) from each seed alignment and reg
 
 ```bash
 python rcons_identity_correlation.py \
-    --sto-dir ./alignments \
-    --regime-csv results/pfam_regime_results.csv \
-    --out-dir ./results
+    --alignment_dir ./alignments \
+    --csv results/rcons_identity_correlation.csv \
+    --plot results/rcons_identity_correlation.png
 ```
 
-**Inputs:** PFAM seed alignments, `pfam_regime_results.csv`  
+**Inputs:** PFAM seed alignments  
 **Outputs:** `rcons_identity_correlation.csv`, `rcons_identity_correlation.png` (S1 Fig)
 
 ---
@@ -119,15 +119,13 @@ python lstar_correlation.py
 
 **`mr_coherence_analysis.py`**
 
-Extracts the sequence coherence length $\ell^*$ from the Turjanski et al. (2016) supplementary MR coverage data for ANK (natural and synthetic), DEH, and WD40. Produces the median coverage curves showing $\ell^* = 4$ universally across all four families.
+Extracts the sequence coherence length $\ell^*$ from the Turjanski et al. (2016) supplementary MR coverage data for ANK (natural and synthetic), DEH, and WD40. Produces the median coverage curves showing $\ell^* = 4$ universally across all four families. All data are hard-coded in the script; no external input files are required. Outputs are written to the current working directory.
 
 ```bash
-python mr_coherence_analysis.py \
-    --turjanski-dir ./turjanski_data \
-    --out-dir ./results
+cd results && python ../mr_coherence_analysis.py
 ```
 
-**Inputs:** Turjanski et al. (2016) Tables S1–S3 (CSV format)  
+**Inputs:** none (Turjanski et al. Tables S1–S3 data are hard-coded)  
 **Outputs:** `mr_coherence_summary.csv`, `mr_coherence_raw.csv`, `mr_coherence_curves.png` (S4 Fig)
 
 ---
@@ -227,6 +225,7 @@ python plot_entropy_regression.py \
 | `contact_density_results.csv` | `contact_density_analysis.py` | Methods |
 | `site_entropy_results.csv` | `site_entropy_analysis.py` | Table 1, Methods |
 | `site_entropy_regression.txt` | `site_entropy_analysis.py` | Results |
+| `site_entropy_regression_data.csv` | `site_entropy_analysis.py` | Methods |
 | `entropy_regression_figure.pdf` | `plot_entropy_regression.py` | Fig 1 |
 
 ---
@@ -242,11 +241,12 @@ mkdir -p alignments pdb results figures
 
 # Run pipeline in order
 python pfam_regime_analysis.py      --sto-dir ./alignments --out-dir ./results
-python rcons_identity_correlation.py --sto-dir ./alignments \
-    --regime-csv results/pfam_regime_results.csv --out-dir ./results
+python rcons_identity_correlation.py --alignment_dir ./alignments \
+    --csv results/rcons_identity_correlation.csv \
+    --plot results/rcons_identity_correlation.png
 python partition_L_gridsearch.py    --L_max 500
 python lstar_correlation.py
-python mr_coherence_analysis.py     --turjanski-dir ./turjanski_data --out-dir ./results
+cd results && python ../mr_coherence_analysis.py && cd ..
 python contact_density_analysis.py  --local-dir ./pdb --out-dir ./results
 python rcons_structural_regression.py \
     --contact-csv results/contact_density_results.csv --out-dir ./results

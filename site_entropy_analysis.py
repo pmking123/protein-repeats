@@ -253,7 +253,7 @@ def main():
             for row in csv.DictReader(f):
                 rcons_data[row["name"]] = {
                     "r_cons":  float(row["r_cons"]),
-                    "mpsi":    float(row["mpsi"]),
+                    "mpsi":    float(row["mpsi"]) if row["mpsi"] != "" else None,
                     "source":  row.get("source", ""),
                 }
         print(f"Loaded {len(rcons_data)} families from {args.rcons_csv}")

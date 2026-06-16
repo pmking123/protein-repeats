@@ -115,23 +115,39 @@ def load_data(entropy_csv, rcons_csv):
     entropy = {r["family"]: r
                for r in csv.DictReader(open(entropy_csv))
                if r["status"] == "ok"}
-    rcons   = {r["name"]: r
-               for r in csv.DictReader(open(rcons_csv))
-               if r["source"] == "computed"}
+
+    # rcons_identity_correlation.csv uses short names ("ANK", "LRR", "TPR")
+    # for the repeat families, but site_entropy_results.csv uses long names
+    # ("ANK (PF00023)", "LRR (PF13516)", "TPR (PF00515)").  Build a lookup
+    # that handles both, and include computed_marchi rows (repeat families
+    # whose r_cons comes from Marchi et al. but whose entropy is computed here).
+    RCONS_NAME_MAP = {
+        "ANK (PF00023)": "ANK",
+        "LRR (PF13516)": "LRR",
+        "TPR (PF00515)": "TPR",
+    }
+    VALID_SOURCES = {"computed", "computed_marchi"}
+    rcons = {}
+    for r in csv.DictReader(open(rcons_csv)):
+        if r.get("source", "") in VALID_SOURCES:
+            rcons[r["name"]] = r
 
     rows = []
     for fam, er in entropy.items():
-        if fam not in rcons:
+        # Try direct match first; fall back to the repeat-family name map
+        rkey = fam if fam in rcons else RCONS_NAME_MAP.get(fam)
+        if rkey is None or rkey not in rcons:
             continue
+        mpsi_str = rcons[rkey].get("mpsi", "")
         rows.append({
             "family":  fam,
-            "r_cons":  float(rcons[fam]["r_cons"]),
-            "mpsi":    float(rcons[fam]["mpsi"]),
+            "r_cons":  float(rcons[rkey]["r_cons"]),
+            "mpsi":    float(mpsi_str) if mpsi_str else None,
             "mean_H":  float(er["mean_H"]),
             "std_H":   float(er["std_H"]),
             "n_seq":   int(er["n_seq"]),
             "L_filt":  int(er["L_filt"]),
-            "regime":  rcons[fam]["regime"],
+            "regime":  rcons[rkey]["regime"],
         })
     return rows
 
